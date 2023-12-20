@@ -1,0 +1,26 @@
+B1: Đăng nhập vào blynk.io
+B2: Tạo template (Lựa chọn loại board sử dụng và cách kết nối (vd: ESP32 và Wifi) )
+B3: Sau khi tạo xong sẽ có hai thứ quan trọng sẽ cần cho sketch đó là:
+	+ #define BLYNK_TEMPLATE_ID "TMPL6R2Y1E0F0"
+	+ #define BLYNK_TEMPLATE_NAME "Lora ESP32 Gateway"
+B4: Vào mục Datastream, setup Datasteam (như một cái channel để gửi nhận dữ liệu giữa cloud và ESP32) bằng cách sau:
+	+ Nhấn vào Add Datastream và chọn VIRTUAL PIN tại mục drop down
+	+ Thêm Datastream vào cho vào những thông số mong muốn, những thông số quan trọng là:
+		+ Name
+		+ Pin
+		+ Data Type
+B5: Vào phần "Web Dashboard" để thiết kế cách hiển thị cho từng giá trị đó, cách thiết kế như sau
+	+ Mình có thể drag-n-drop những widget mà mình muốn, sau đó chỉnh tên của cái widget đó cũng như cái Datastream
+	mà cái widget đó kết nối vào và VẬY LÀ THÀNH CÔNG
+
+
+
+
+
+================FORM=========================================	
+#define BLYNK_TEMPLATE_ID "TMPL6R2Y1E0F0"		    |
+#define BLYNK_TEMPLATE_NAME "Lora ESP32 Gateway"	    |
+#define BLYNK_AUTH_TOKEN "ACvZJLVxEC0QjjCTk39ONmAkj1v6MRlG" |
+=============================================================
+
+

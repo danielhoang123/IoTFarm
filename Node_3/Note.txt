@@ -1,0 +1,3 @@
+Requirement:
+	+ Read SHT30 sensor to get temperature and humidity
+	+ Control servo using light sensor (photodiode)

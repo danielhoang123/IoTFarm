@@ -1,0 +1,5 @@
+Requirements:
+	+ Read soil moisture sensor
+	+ Read rain sensor
+	+ Read light sensor (photodiode) and control servo every 30s
+	+ send to esp32 lora

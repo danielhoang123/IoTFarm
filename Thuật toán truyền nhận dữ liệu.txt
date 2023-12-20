@@ -1,0 +1,4 @@
+Do mình không đảm bảo được tính ổn định của việc truyền nhận tín hiệu, nên mình sẽ chơi cách sau
+
+Cứ mỗi 10 giây, gateway sẽ lấy tín hiệu từ một node liên tục.
+Và đẩy giá trị này lên Blynk tương ứng

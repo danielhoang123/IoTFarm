@@ -1,0 +1,12 @@
+Sử dụng như thế này thử:
+
+unsigned long startMillis = 0;
+
+if(currentMillis - startMillis >= 100){
+	**Gửi Lora*
+}
+else{
+	*Nhận Lora
+	*Xử lí chuỗi
+	**Chuyển data và đưa vào biến
+}

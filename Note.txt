@@ -1,0 +1,20 @@
+Các thứ sẽ cần phải kiểm tra:
+
+Kiểm tra việc tạo ra gateway với esp32 và lora 433Mhz SPI
+
+Kiểm tra việc truyền data từ node -> gateway (Uplink) và ngược lại (Downlink)
+
+
+
+GIẢI THUẬT CHO TOÀN BỘ HỆ THỐNG
+	- B1: Ban đầu cả 3 node ở chế độ nghe của Lora, ESP32 Lora là truyền
+	- B2: ESP32 Lora truyền ID1
+	- B3: Nếu nhận được ID của mình, Node_1 chuyển mode thành truyền, gửi cho ESP32 giá trị cảm biến cùng với cờ chuyển mode
+	- B4: ESP32 nhận được giá trị và cờ chuyển, cập nhật giá trị (biến toàn cục) và chuyển mode, gửi ID2
+	- B5: Thành 1 vòng lặp
+
+
+MỘT SỐ CONCERNs:
+	+ Cái khoảng khắc lần đầu tiên khi esp gửi id là một canh bạc, mình không thể xác định được nếu như dùng giải thuật
+	ở đầu. MÌNH CHỈ CÓ THỂ DỰA VÀO CÁI PACKET CỦA MÌNH NHỎ ĐỂ ĐẢM BẢO KHẢ NĂNG CAO MÌNH TRUYỀN ID ĐƯỢC.
+ 
