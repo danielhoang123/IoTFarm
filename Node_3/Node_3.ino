@@ -19,31 +19,51 @@ unsigned long recMillis = 0; // millis for changing to receiving mode
 
 // millis variables for updating dht11 value
 unsigned long startMillis_DHT = 0;
-const long updateDHT_Interval = 500;
+const long updateDHT_Interval = 250;
 
 // millis variables for reseting Lora Module
-unsigned long startMillis_resetLora = 0;
-const long resetLora_interval = 15000;
+unsigned long startMillis_LORAsend = 0;
+const long LORAsend_interval = 50;
+
+//reset bool temp
+unsigned long startMillis_clearString = 0;
+const long clearString_interval = 500;
+
+//millis for controlling servo
+unsigned long startMillis_servoControl = 0;
+const long servoControl_interval = 1000;
 
 bool resetLora_flag = 0;
 
-int val = 0;
+int val = 0, count = 0;
 float h, t;
+
+bool temp = 0;
+
 String inString = "";
 
 void setup()
 {
   Serial.begin(9600);
 
-  dht.begin();
+  // dht.begin();
 
   // Init Lora Module
-  if (!LoRa.begin(433E6))
-  { // or 915E6, the MHz speed of yout module
-    Serial.println("Starting LoRa failed!");
-    while (1)
-      ;
+  // if (!LoRa.begin(433E6))
+  // { // or 915E6, the MHz speed of yout module
+  //   Serial.println("Starting LoRa failed!");
+  //   while (1)
+  //     ;
+  // }
+
+  // LoRa.setPins(10, 9, 2); // setup LoRa transceiver module
+  // LoRa.setSyncWord(0xA5);
+  while (!LoRa.begin(433E6)) // 433E6 - Asia, 866E6 - Europe, 915E6 - North America
+  {
+    Serial.println(".");
+    delay(500);
   }
+  Serial.println("LoRa Initializing OK!");
 
   // Initializing I2C Communication
   Wire.begin();
@@ -61,67 +81,128 @@ void loop()
 
   unsigned long currentMillis = millis();
 
-  if (currentMillis - startMillis_DHT >= updateDHT_Interval)
+  if (currentMillis - startMillis_DHT >= 50)
   {
     startMillis_DHT = currentMillis;
-    h = dht.readHumidity();
-    t = dht.readTemperature();
+    sht.read();
+    t = sht.getTemperature();
+    h = sht.getHumidity();
+    // Serial.println("Temp: " + String(t) + ", Humid: " + String(h));
   }
 
-  if (currentMillis - recMillis >= 200)
+  if (currentMillis - recMillis >= 100)
   {
     recMillis = currentMillis;
-
     int packetSize = LoRa.parsePacket();
-
     if (packetSize)
     {
-      // read packet
       while (LoRa.available())
       {
         int inChar = LoRa.read();
         inString += (char)inChar;
         val = inString.toInt();
       }
-
       Serial.println(inString);
+      
+      if(inString == "3"){
+        temp = 1;
+      }
 
-      if (inString == "1" || inString == "2")
-      {
-        inString = "";
-        return;
-      }
-      if (inString == "3")
-      {
-        resetLora_flag = 1;
-        if (LoRa.beginPacket())
-        {
-          Serial.println("Ready");
-          LoRa.print(h);
-          LoRa.print(",");
-          LoRa.print(t);
-          LoRa.endPacket();
-        }
-        inString = "";
-      }
+      inString = "";
     }
   }
 
-  // reset Lora after receive Data
-  if (resetLora_flag == 1)
+  if (temp == 1)
   {
-    if (currentMillis - startMillis_resetLora >= resetLora_interval)
-    {
-      startMillis_resetLora = currentMillis;
-      LoRa.end();
-      if (!LoRa.begin(433E6))
-      { 
-        Serial.println("LoRa init failed. Check your connections.");
-        while (true)
-          ; // if failed, do nothing
-      }
-      Serial.print("Reset Lora DONE!");
-      resetLora_flag = 0;
+    // Serial.println("Checked");
+    LoRa.beginPacket();
+    LoRa.print(t, 1);
+    LoRa.print(h, 1);
+    LoRa.endPacket();
+    
+    if(currentMillis - startMillis_clearString >= clearString_interval){
+      startMillis_clearString = currentMillis;
+      temp = 0;
     }
+  }
+
+  
+  // switch (temp)
+  // {
+  // case 0:
+  //   int packetSize = LoRa.parsePacket();
+
+  //   if (packetSize)
+  //   {
+  //     while (LoRa.available())
+  //     {
+  //       int inChar = LoRa.read();
+  //       inString += (char)inChar;
+  //       val = inString.toInt();
+  //     }
+  //     Serial.println(inString);
+
+  //     if (inString == "Hello")
+  //     {
+  //       temp = 1;
+  //       Serial.println(temp);
+  //       inString = "";
+  //     }
+  //     else
+  //     {
+  //       inString = "";
+  //     }
+  //   }
+
+  //   break;
+  // case 1:
+  //   unsigned long currentMillis1 = millis();
+  //   if (currentMillis1 - startMillis_LORAsend >= 10000)
+  //   {
+  //     startMillis_LORAsend = currentMillis1;
+  //     temp = 0;
+  //   }
+
+  //   if (count == 8)
+  //   {
+  //     temp = 0;
+  //     count = 0;
+  //     Serial.println("temp: " + String(temp) + "and Count: " + String(count));
+  //   }
+
+  //   LoRa.beginPacket();
+  //   LoRa.print(t, 1);
+  //   LoRa.print(h, 1);
+  //   LoRa.endPacket();
+
+  //   break;
+  // }
+
+  // reset Lora after receive Data
+  // if (resetLora_flag == 1)
+  // {
+  //   if (currentMillis - startMillis_resetLora >= resetLora_interval)
+  //   {
+  //     startMillis_resetLora = currentMillis;
+  //     LoRa.end();
+  //     if (!LoRa.begin(433E6))
+  //     {
+  //       Serial.println("LoRa init failed. Check your connections.");
+  //       while (true)
+  //         ; // if failed, do nothing
+  //     }
+  //     Serial.print("Reset Lora DONE!");
+  //     resetLora_flag = 0;
+  //   }
+  // }
+
+  //Servo Control
+  if(currentMillis - startMillis_servoControl >= servoControl_interval){
+    startMillis_servoControl = currentMillis;
+    int photo1_EAST = analogRead(A1);
+    int photo1_WEST = analogRead(A2);
+
+    Serial.println(photo1_EAST);
+    Serial.println(photo1_WEST);
   }
 }
