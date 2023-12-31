@@ -1,7 +1,6 @@
 #include <Servo.h>
 
 Servo myservo;
-int pos = 0;
 
 unsigned int temp1, temp2;
 

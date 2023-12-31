@@ -33,8 +33,8 @@
 
 /* Comment this out to disable prints and save space */
 #define BLYNK_PRINT Serial
-#define BLYNK_TEMPLATE_ID "TMPL6R2Y1E0F0"
-#define BLYNK_TEMPLATE_NAME "Lora ESP32 Gateway"
+#define BLYNK_TEMPLATE_ID "TMPL6k6892QmJ"
+#define BLYNK_TEMPLATE_NAME "IOTFarm"
 
 #include <WiFi.h>
 #include <WiFiClient.h>
@@ -53,7 +53,7 @@
 
 // You should get Auth Token in the Blynk App.
 // Go to the Project Settings (nut icon).
-char auth[] = "ACvZJLVxEC0QjjCTk39ONmAkj1v6MRlG"; // Paste auth token you copied
+char auth[] = "uKBdmxpwtNovWFX4CbTt-cn1-jsiUywK"; // Paste auth token you copied
 
 // Your WiFi credentials.
 // Set password to "" for open networks.
@@ -86,20 +86,77 @@ int test_node_change;
 float tempx = 0;
 float humix = 0;
 
-// This function sends Arduino's up time every second to Virtual Pin (5).
-// In the app, Widget's reading frequency should be set to PUSH. This means
-// that you define how often to send data to Blynk App.
-void sendSensor()
+float luxx = 0;
+float pHx = 0;
+
+int valMoist = 0;
+int valRain = 0;
+
+
+//pump controlling variables
+unsigned long checkMillis = 0;
+const long checkInterval = 100;
+
+unsigned long addValueMillis = 0;
+const long addValueInterval = 100;
+
+bool pump1_state = 0;
+bool pump2_state = 0;
+bool pump3_state = 0;
+
+void sendNode3()
 {
 
-  Blynk.virtualWrite(V5, humix); // select your virtual pins accordingly
+  if (test_node_change == 3)
+  {
+    //temp
+    Blynk.virtualWrite(V3, humix); // select your virtual pins accordingly
 
-  Blynk.virtualWrite(V6, tempx); // select your virtual pins accordingly
+    //humi
+    Blynk.virtualWrite(V2, tempx); // select your virtual pins accordingly
+  }
+
+  if (test_node_change == 2)
+  {
+    // light
+    Blynk.virtualWrite(V1, luxx); // select your virtual pins accordingly
+
+    // pH
+    Blynk.virtualWrite(V0, pHx); // select your virtual pins accordingly
+  }
+
+  if (test_node_change == 1)
+  {
+    // Soil
+    Blynk.virtualWrite(V4, valMoist); // select your virtual pins accordingly
+
+    // rain
+    if (valRain < 50)
+    {
+      Blynk.virtualWrite(V5, "Raining"); // select your virtual pins accordingly
+    }
+    if(valRain > 800){
+      Blynk.virtualWrite(V5, "Not raining");
+    }
+  }
 }
 
-void sendSensor1()
+void sendNode2()
 {
-  Blynk.virtualWrite(V2, 5000); // select your virtual pins accordingly
+  // light
+  Blynk.virtualWrite(V1, luxx); // select your virtual pins accordingly
+
+  // pH
+  Blynk.virtualWrite(V0, pHx); // select your virtual pins accordingly
+}
+
+void sendNode1()
+{
+  // Soil
+  Blynk.virtualWrite(V4, 1); // select your virtual pins accordingly
+
+  // rain
+  Blynk.virtualWrite(V5, 1); // select your virtual pins accordingly
 }
 
 void setup()
@@ -129,8 +186,10 @@ void setup()
 
   // Blynk Section
   Blynk.begin(auth, ssid, pass);
-  timer.setInterval(1000L, sendSensor);
-  timer.setInterval(1000L, sendSensor1);
+
+  // timer.setInterval(1000L, sendNode1);
+  // timer.setInterval(1000L, sendNode2);
+  timer.setInterval(1000L, sendNode3);
 
   test_node_change = 1;
 }
@@ -140,6 +199,7 @@ void loop()
 
   Blynk.run();
   timer.run();
+
   // First, a bool flip every 1s
   unsigned long currentMillis = millis();
 
@@ -182,17 +242,49 @@ void loop()
       {
         String LoRaData = LoRa.readString();
 
-        String temp1 = LoRaData.substring(0, 4);
-        String humi1 = LoRaData.substring(4);
-        tempx = temp1.toFloat();
-        humix = humi1.toFloat();
+        if (test_node_change == 1)
+        {
+          int commaIndex = LoRaData.indexOf(',');
+          String temp1 = LoRaData.substring(0, commaIndex);
+          String temp2 = LoRaData.substring(commaIndex + 1);
+          valMoist = temp1.toInt();
+          valRain = temp2.toInt();
+        }
+
+        if (test_node_change == 2)
+        {
+          int commaIndex = LoRaData.indexOf(',');
+          String temp1 = LoRaData.substring(0, commaIndex);
+          String temp2 = LoRaData.substring(commaIndex + 1);
+          luxx = temp1.toFloat();
+          pHx = temp2.toFloat();
+        }
+
+        if (test_node_change == 3)
+        {
+          int commaIndex = LoRaData.indexOf(',');
+          String temp1 = LoRaData.substring(0, commaIndex);
+          String temp2 = LoRaData.substring(commaIndex + 1);
+          tempx = temp1.toFloat();
+          humix = temp2.toFloat();
+        }
+        // String temp1 = LoRaData.substring(0, 4);
+        // String humi1 = LoRaData.substring(4);
+        // tempx = temp1.toFloat();
+        // humix = humi1.toFloat();
 
         // Serial.print(tempx + "\t");
         // Serial.println(humix);
 
+        // int commaIndex = LoRaData.indexOf(',');
+        // String temp1 = LoRaData.substring(0, commaIndex);
+        // String humi1 = LoRaData.substring(commaIndex + 1);
+        // tempx = temp1.toFloat();
+        // humix = humi1.toFloat();
+
         Serial.println("Lora:" + LoRaData);
-        Serial.println("Temp:" + temp1);
-        Serial.println("Humid:" + humi1);
+        // Serial.println("Temp:" + temp1);
+        // Serial.println("Humid:" + humi1);
       }
     }
     break;
@@ -235,4 +327,35 @@ void loop()
   //     Serial.println(humi1);
   //   }
   // }
+
+  /*START Control pump*/
+  if(currentMillis - checkMillis >= checkInterval){
+    checkMillis = currentMillis;
+    if(pHx < 4){
+      pump2_state = 1;
+    }
+
+    if(pHx >= 6.5 && pHx <= 7.5){
+      pump2_state = 0;
+      pump3_state = 0;
+    }
+
+     if(pHx >= 11.0){
+      pump3_state = 1;
+    }
+
+    if(valMoist > 400 && valRain > 900){
+      pump1_state = 1;
+    }
+    else{
+      pump1_state = 0;
+    }
+  }
+
+  if(currentMillis - addValueMillis >= addValueInterval){
+    addValueMillis = currentMillis;
+    digitalWrite(13, pump3_state);
+    digitalWrite(14, pump2_state);
+    digitalWrite(15, pump1_state);
+  }
 }

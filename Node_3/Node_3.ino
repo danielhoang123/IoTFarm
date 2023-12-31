@@ -1,13 +1,22 @@
 #include "Wire.h"
 #include "SHT31.h"
-#include "DHT.h"
 
 #include <SPI.h>
 #include <LoRa.h>
 
-#define DHTPIN 7      // What digital pin we're connected to select yours accordingly
-#define DHTTYPE DHT11 // DHT 11
-DHT dht(DHTPIN, DHTTYPE);
+#include <Servo.h>
+
+Servo myservo;
+
+unsigned int temp1, temp2;
+
+signed int temp3;
+
+unsigned long startMillis = 0;
+const long interval = 10;
+
+unsigned long startMillis1 = 0;
+const long interval1 = 1000;
 
 SHT31 sht;
 
@@ -25,11 +34,11 @@ const long updateDHT_Interval = 250;
 unsigned long startMillis_LORAsend = 0;
 const long LORAsend_interval = 50;
 
-//reset bool temp
+// reset bool temp
 unsigned long startMillis_clearString = 0;
 const long clearString_interval = 500;
 
-//millis for controlling servo
+// millis for controlling servo
 unsigned long startMillis_servoControl = 0;
 const long servoControl_interval = 1000;
 
@@ -45,7 +54,8 @@ String inString = "";
 void setup()
 {
   Serial.begin(9600);
-
+  myservo.attach(5);
+  myservo.write(90);
   // dht.begin();
 
   // Init Lora Module
@@ -103,8 +113,9 @@ void loop()
         val = inString.toInt();
       }
       Serial.println(inString);
-      
-      if(inString == "3"){
+
+      if (inString == "3")
+      {
         temp = 1;
       }
 
@@ -117,16 +128,17 @@ void loop()
     // Serial.println("Checked");
     LoRa.beginPacket();
     LoRa.print(t, 1);
+    LoRa.print(",");
     LoRa.print(h, 1);
     LoRa.endPacket();
-    
-    if(currentMillis - startMillis_clearString >= clearString_interval){
+
+    if (currentMillis - startMillis_clearString >= clearString_interval)
+    {
       startMillis_clearString = currentMillis;
       temp = 0;
     }
   }
 
-  
   // switch (temp)
   // {
   // case 0:
@@ -196,13 +208,43 @@ void loop()
   //   }
   // }
 
-  //Servo Control
-  if(currentMillis - startMillis_servoControl >= servoControl_interval){
-    startMillis_servoControl = currentMillis;
-    int photo1_EAST = analogRead(A1);
-    int photo1_WEST = analogRead(A2);
+  /*START Servo Control*/
+  temp1 = analogRead(A1);
+  temp2 = analogRead(A2);
 
-    Serial.println(photo1_EAST);
-    Serial.println(photo1_WEST);
+  if (currentMillis - startMillis >= 50)
+  {
+    startMillis = currentMillis;
+    temp3 = temp2 - temp1;
   }
+
+  if (currentMillis - startMillis1 >= interval1)
+  {
+    startMillis1 = currentMillis;
+    if (temp3 <= -50)
+    {
+      myservo.write(135);
+    }
+
+    if (temp3 > -50 && temp3 <= -20)
+    {
+      myservo.write(115);
+    }
+
+    if (temp3 > -10 && temp3 <= 10)
+    {
+      myservo.write(90);
+    }
+
+    if (temp3 > 20 && temp3 <= 50)
+    {
+      myservo.write(85);
+    }
+
+    if (temp3 >= 50)
+    {
+      myservo.write(45);
+    }
+  }
+  /*END Servo Control*/
 }
