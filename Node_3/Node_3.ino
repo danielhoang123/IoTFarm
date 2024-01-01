@@ -6,6 +6,8 @@
 
 #include <Servo.h>
 
+#define tolerance 18
+
 Servo myservo;
 
 unsigned int temp1, temp2;
@@ -16,7 +18,8 @@ unsigned long startMillis = 0;
 const long interval = 10;
 
 unsigned long startMillis1 = 0;
-const long interval1 = 1000;
+const long interval1 = 50;
+int servo_pos;
 
 SHT31 sht;
 
@@ -44,7 +47,7 @@ const long servoControl_interval = 1000;
 
 bool resetLora_flag = 0;
 
-int val = 0, count = 0;
+int count = 0;
 float h, t;
 
 bool temp = 0;
@@ -54,20 +57,7 @@ String inString = "";
 void setup()
 {
   Serial.begin(9600);
-  myservo.attach(5);
-  myservo.write(90);
-  // dht.begin();
-
-  // Init Lora Module
-  // if (!LoRa.begin(433E6))
-  // { // or 915E6, the MHz speed of yout module
-  //   Serial.println("Starting LoRa failed!");
-  //   while (1)
-  //     ;
-  // }
-
-  // LoRa.setPins(10, 9, 2); // setup LoRa transceiver module
-  // LoRa.setSyncWord(0xA5);
+  
   while (!LoRa.begin(433E6)) // 433E6 - Asia, 866E6 - Europe, 915E6 - North America
   {
     Serial.println(".");
@@ -81,7 +71,63 @@ void setup()
   Wire.setClock(100000);
 
   mode_change = 0;
-  val = 0;
+
+  /*START Servo Setup*/
+  delay(250);
+
+  myservo.attach(5);
+  myservo.write(110);
+
+  delay(1000);
+
+  temp1 = analogRead(A1);
+  delayMicroseconds(250);
+  temp2 = analogRead(A2);
+  delayMicroseconds(250);
+  temp3 = temp2 - temp1;
+  Serial.println(temp3);
+
+  // sun 180 degree (Sunrise)
+  if (temp3 <= -900)
+  {
+    servo_pos = 175;
+    myservo.write(servo_pos);
+    delay(500);
+  }
+
+  // between Sunrise and Noon
+  if (temp3 >= -900 && temp3 <= -20)
+  {
+    servo_pos = 150;
+    myservo.write(servo_pos);
+    delay(500);
+  }
+
+  // sun 90 degree (Noon)
+  if (temp3 >= -20 && temp3 <= 20)
+  {
+    servo_pos = 105;
+    myservo.write(servo_pos);
+    delay(500);
+  }
+
+  // between Noon and Susnet
+  if (temp3 >= 20 && temp3 <= 900)
+  {
+    servo_pos = 60;
+    myservo.write(servo_pos);
+    delay(500);
+  }
+
+  // sun 0 degree (Sunset)
+  if (temp3 >= 900)
+  {
+    servo_pos = 40;
+    myservo.write(servo_pos);
+    delay(500);
+  }
+
+  /*END Servo Setup*/
 
   Serial.println("Node 3 Start!!!");
 }
@@ -110,7 +156,6 @@ void loop()
       {
         int inChar = LoRa.read();
         inString += (char)inChar;
-        val = inString.toInt();
       }
       Serial.println(inString);
 
@@ -209,41 +254,36 @@ void loop()
   // }
 
   /*START Servo Control*/
-  temp1 = analogRead(A1);
-  temp2 = analogRead(A2);
 
   if (currentMillis - startMillis >= 50)
   {
     startMillis = currentMillis;
+    temp1 = analogRead(A1);
+    delayMicroseconds(250);
+    temp2 = analogRead(A2);
+    delayMicroseconds(250);
     temp3 = temp2 - temp1;
   }
 
   if (currentMillis - startMillis1 >= interval1)
   {
     startMillis1 = currentMillis;
-    if (temp3 <= -50)
+    int tempx = temp3;
+    if (tempx < -tolerance)
     {
-      myservo.write(135);
+      if (servo_pos < 175)
+      {
+        myservo.write(servo_pos);
+        servo_pos++;
+      }
     }
-
-    if (temp3 > -50 && temp3 <= -20)
+    if (tempx > tolerance)
     {
-      myservo.write(115);
-    }
-
-    if (temp3 > -10 && temp3 <= 10)
-    {
-      myservo.write(90);
-    }
-
-    if (temp3 > 20 && temp3 <= 50)
-    {
-      myservo.write(85);
-    }
-
-    if (temp3 >= 50)
-    {
-      myservo.write(45);
+      if (servo_pos > 40)
+      {
+        servo_pos--;
+        myservo.write(servo_pos);
+      }
     }
   }
   /*END Servo Control*/

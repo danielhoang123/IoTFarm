@@ -6,6 +6,7 @@
 #define sensorMoist A0
 #define sensorRain A3
 
+#define tolerance 18
 Servo myservo;
 
 unsigned int temp1, temp2;
@@ -16,10 +17,12 @@ unsigned long startMillis = 0;
 const long interval = 10;
 
 unsigned long startMillis1 = 0;
-const long interval1 = 1000;
+const long interval1 = 50;
+int servo_pos;
 
 int valMoist;
 int valRain;
+int map_value = 0;
 
 unsigned long soilSensorMillis = 0;
 unsigned long rainSensorMillis = 0;
@@ -42,10 +45,6 @@ void setup()
     // For debugging
     Serial.begin(9600);
 
-    // servo
-    myservo.attach(5);
-    myservo.write(90);
-
     // Init and debugging Lora's Initialization
     while (!Serial)
         ;
@@ -60,6 +59,61 @@ void setup()
     // Variables init
     valMoist = 0;
     valRain = 0;
+
+    /*START Servo Setup*/
+    delay(250);
+    myservo.attach(5);
+    myservo.write(102);
+    delay(1000);
+
+    temp1 = analogRead(A2);
+    delayMicroseconds(250);
+    temp2 = analogRead(A1);
+    delayMicroseconds(250);
+    temp3 = temp2 - temp1;
+    Serial.println(temp3);
+
+    // sun 180 degree (Sunrise)
+    if (temp3 <= -900)
+    {
+        servo_pos = 155;
+        myservo.write(servo_pos);
+        delay(500);
+    }
+
+    // between Sunrise and Noon
+    if (temp3 >= -900 && temp3 <= -20)
+    {
+        servo_pos = 130;
+        myservo.write(servo_pos);
+        delay(500);
+    }
+
+    // sun 90 degree (Noon)
+    if (temp3 >= -20 && temp3 <= 20)
+    {
+        servo_pos = 102;
+        myservo.write(servo_pos);
+        delay(500);
+    }
+
+    // between Noon and Susnet
+    if (temp3 >= 20 && temp3 <= 900)
+    {
+        servo_pos = 60;
+        myservo.write(servo_pos);
+        delay(500);
+    }
+
+    // sun 0 degree (Sunset)
+    if (temp3 >= 900)
+    {
+        servo_pos = 40;
+        myservo.write(servo_pos);
+        delay(500);
+    }
+
+    /*END Servo Setup*/
 }
 
 void loop()
@@ -68,16 +122,18 @@ void loop()
     unsigned long currentMillis = millis();
 
     // Read Moisture sensor every 500ms
-    if (currentMillis - soilSensorMillis >= 500)
+    if (currentMillis - soilSensorMillis >= 100)
     {
         soilSensorMillis = currentMillis;
         valMoist = analogRead(sensorMoist);
+        Serial.println(valMoist);
+        map_value = map(valMoist, 0, 505, 0, 100);
         // Serial.print("Moisture: ");
         // Serial.println(valMoist);
     }
 
     // Read Moisture sensor every 500ms
-    if (currentMillis - rainSensorMillis >= 500)
+    if (currentMillis - rainSensorMillis >= 200)
     {
         rainSensorMillis = currentMillis;
         valRain = analogRead(sensorRain);
@@ -150,7 +206,7 @@ void loop()
     {
         // Serial.println("Checked");
         LoRa.beginPacket();
-        LoRa.print(valMoist);
+        LoRa.print(map_value);
         LoRa.print(",");
         LoRa.print(valRain);
         LoRa.endPacket();
@@ -162,42 +218,38 @@ void loop()
         }
     }
 
-    // servo
-    temp1 = analogRead(A1);
-    temp2 = analogRead(A2);
-
+    /*START Control Servo*/
     if (currentMillis - startMillis >= 50)
     {
         startMillis = currentMillis;
+        temp1 = analogRead(A2);
+        delayMicroseconds(250);
+        temp2 = analogRead(A1);
+        delayMicroseconds(250);
         temp3 = temp2 - temp1;
     }
 
     if (currentMillis - startMillis1 >= interval1)
     {
         startMillis1 = currentMillis;
-        if (temp3 <= -50)
+        startMillis1 = currentMillis;
+        int tempx = temp3;
+        if (tempx < -tolerance)
         {
-            myservo.write(135);
+            if (servo_pos < 165)
+            {
+                myservo.write(servo_pos);
+                servo_pos++;
+            }
         }
-
-        if (temp3 > -50 && temp3 <= -20)
+        if (tempx > tolerance)
         {
-            myservo.write(115);
-        }
-
-        if (temp3 > -10 && temp3 <= 10)
-        {
-            myservo.write(90);
-        }
-
-        if (temp3 > 20 && temp3 <= 50)
-        {
-            myservo.write(85);
-        }
-
-        if (temp3 >= 50)
-        {
-            myservo.write(45);
+            if (servo_pos > 35)
+            {
+                servo_pos--;
+                myservo.write(servo_pos);
+            }
         }
     }
+    /*END Control Servo*/
 }

@@ -9,6 +9,7 @@
 #include <Servo.h>
 
 #define tolerance 18
+
 Servo myservo;
 BH1750 lightMeter;
 
@@ -16,7 +17,6 @@ BH1750 lightMeter;
 unsigned int temp1, temp2;
 
 signed int temp3;
-signed int check1 = -900;
 
 unsigned long startMillis = 0;
 const long interval = 10;
@@ -27,32 +27,39 @@ const long interval1 = 1000;
 int servo_pos;
 /*END Variables to control servo*/
 
+/*START Variables to read soil's pH sensor*/
+
 const byte ph[] = {0x01, 0x03, 0x00, 0x00, 0x00, 0x01, 0x84, 0x0A};
 byte values[11];
-// SoftwareSerial mod(2, 3);
-
-float lux = 0.0;
-
 float soil_ph = 0;
-
-unsigned long bhMillis = 0;
 unsigned long phMillis = 0;
 
-unsigned long recMillis = 0; // millis for changing to receiving mode
-String inString = "";
-int val = 0;
-bool temp = 0;
+/*END Variables to read soil's pH sensor*/
 
+/*START Variables to read BH1750 sensor*/
+
+float lux = 0.0;
+unsigned long bhMillis = 0;
+
+/*END Variables to read BH1750 sensor*/
+
+/*START Variables to control Lora Module*/
+
+unsigned long recMillis = 0; 
+String inString = "";
+bool temp = 0;
 unsigned long startMillis_clearString = 0;
 const long clearString_interval = 500;
 
-void servo_first_time();
+/*END Variables to control Lora Module*/
 
 void setup()
 {
+    //Init UART with baudrate 4800 to read value from pH sensor
     Serial.begin(4800);
 
-    while (!LoRa.begin(433E6)) // 433E6 - Asia, 866E6 - Europe, 915E6 - North America
+    //Init Lora Module
+    while (!LoRa.begin(433E6)) 
     {
         delay(500);
     }
@@ -61,8 +68,6 @@ void setup()
     Wire.begin();
     lightMeter.begin();
 
-    // Software to use pH for debugging
-    // mod.begin(4800);
 
     /*START Servo Setup*/
     delay(250);
@@ -116,6 +121,7 @@ void setup()
         myservo.write(servo_pos);
         delay(500);
     }
+
     /*END Servo Setup*/
 }
 
@@ -156,6 +162,7 @@ void loop()
         /*START Debugging Session*/
         // Serial.print("Soil Ph: ");
         // Serial.println(soil_ph, 1);
+        /*END Debugging Session*/
     }
     /*END Reading pH Value*/
 
@@ -171,9 +178,7 @@ void loop()
             {
                 int inChar = LoRa.read();
                 inString += (char)inChar;
-                val = inString.toInt();
             }
-
             if (inString == "2")
             {
                 temp = 1;
@@ -237,53 +242,4 @@ void loop()
     }
 
     /*END Control Servo*/
-}
-
-void servo_first_time()
-{
-    int temp11 = analogRead(A1);
-    delay(100);
-    int temp12 = analogRead(A2);
-    delay(100);
-    int temp13 = temp12 - temp11;
-
-    if (temp13 <= -900)
-    {
-        // myservo.write(140);
-        delay(25);
-        int servo_pos1 = 140;
-        myservo.write(servo_pos1);
-    }
-
-    if (temp13 > -300 && temp13 <= -200)
-    {
-        // myservo.write(120);
-        delay(25);
-        int servo_pos1 = 120;
-        myservo.write(servo_pos1);
-    }
-
-    if (temp13 > -20 && temp13 <= 20)
-    {
-        // myservo.write(95);
-        delay(25);
-        int servo_pos1 = 95;
-        myservo.write(servo_pos1);
-    }
-
-    if (temp13 > 250 && temp13 <= 300)
-    {
-        // myservo.write(70);
-        delay(25);
-        int servo_pos1 = 70;
-        myservo.write(servo_pos1);
-    }
-
-    if (temp13 >= 900)
-    {
-        // myservo.write(30);
-        delay(25);
-        int servo_pos1 = 30;
-        myservo.write(servo_pos1);
-    }
 }
