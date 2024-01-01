@@ -8,7 +8,7 @@
 #include <LoRa.h>
 #include <Servo.h>
 
-#define tolerance 5
+#define tolerance 18
 Servo myservo;
 BH1750 lightMeter;
 
@@ -16,6 +16,7 @@ BH1750 lightMeter;
 unsigned int temp1, temp2;
 
 signed int temp3;
+signed int check1 = -900;
 
 unsigned long startMillis = 0;
 const long interval = 10;
@@ -23,7 +24,7 @@ const long interval = 10;
 unsigned long startMillis1 = 0;
 const long interval1 = 1000;
 
-int servo_pos = 95;
+int servo_pos;
 /*END Variables to control servo*/
 
 const byte ph[] = {0x01, 0x03, 0x00, 0x00, 0x00, 0x01, 0x84, 0x0A};
@@ -62,33 +63,83 @@ void setup()
 
     // Software to use pH for debugging
     // mod.begin(4800);
-    temp1 = 0;
-    temp2 = 0;
-    temp3 = 0;
 
+    /*START Servo Setup*/
+    delay(250);
     myservo.attach(5);
-    myservo.write(servo_pos);
-
+    myservo.write(95);
     delay(1000);
 
-    // servo_first_time();
+    temp1 = analogRead(A1);
+    delayMicroseconds(250);
+    temp2 = analogRead(A2);
+    delayMicroseconds(250);
+    temp3 = temp2 - temp1;
+    Serial.println(temp3);
+
+    //sun 180 degree (Sunrise)
+    if (temp3 <= -900)
+    {
+        servo_pos = 155;
+        myservo.write(servo_pos);
+        delay(500);
+    }
+
+    //between Sunrise and Noon
+    if (temp3 >= -900 && temp3 <= -20)
+    {
+        servo_pos = 130;
+        myservo.write(servo_pos);
+        delay(500);
+    }
+
+    //sun 90 degree (Noon)
+    if (temp3 >= -20 && temp3 <= 20)
+    {
+        servo_pos = 95;
+        myservo.write(servo_pos);
+        delay(500);
+    }
+
+    //between Noon and Susnet
+    if (temp3 >= 20 && temp3 <= 900)
+    {
+        servo_pos = 60;
+        myservo.write(servo_pos);
+        delay(500);
+    }
+
+    //sun 0 degree (Sunset)
+    if (temp3 >= 900)
+    {
+        servo_pos = 40;
+        myservo.write(servo_pos);
+        delay(500);
+    }
+    /*END Servo Setup*/
 }
 
 void loop()
 {
     unsigned long currentMillis = millis();
 
-    // Read BH1750 sensor every 100ms
+    /*START Reading lx value*/
     if (currentMillis - bhMillis >= 100)
     {
         bhMillis = currentMillis;
         lux = lightMeter.readLightLevel();
+
+        /*START Debugging Session*/
+
         // Serial.print("Light: ");
         // Serial.print(lux);
         // Serial.println(" lx");
-    }
 
-    // Read pH sensor every 200ms
+        /*END Debugging Session*/
+    }
+    /*END Reading lx value*/
+
+    /*START Reading pH Value*/
     if (currentMillis - phMillis >= 200)
     {
         phMillis = currentMillis;
@@ -98,21 +149,24 @@ void loop()
             for (byte i = 0; i < 11; i++)
             {
                 values[i] = Serial.read();
-                // Serial.print(values[i], HEX);
             }
-            // Serial.println();
         }
         soil_ph = float(values[4]) / 10;
+
+        /*START Debugging Session*/
         // Serial.print("Soil Ph: ");
         // Serial.println(soil_ph, 1);
     }
+    /*END Reading pH Value*/
 
+    /*START Control Lora Module*/
     if (currentMillis - recMillis >= 100)
     {
         recMillis = currentMillis;
         int packetSize = LoRa.parsePacket();
         if (packetSize)
         {
+
             while (LoRa.available())
             {
                 int inChar = LoRa.read();
@@ -145,6 +199,7 @@ void loop()
             temp = 0;
         }
     }
+    /*END Control Lora Module*/
 
     /*START Control Servo*/
 
@@ -152,106 +207,83 @@ void loop()
     {
         startMillis = currentMillis;
         temp1 = analogRead(A1);
+        delayMicroseconds(250);
         temp2 = analogRead(A2);
-        // Serial.println(temp3);
-        // temp3 = temp2 - temp1;
+        delayMicroseconds(250);
+        temp3 = temp2 - temp1;
         // Serial.println(temp3);
     }
 
-    if (currentMillis - startMillis1 >= 100)
+    if (currentMillis - startMillis1 >= 50)
     {
         startMillis1 = currentMillis;
-
-        temp3 = temp2 - temp1;
-        Serial.println(temp3);
-        // myservo.write(servo_pos);
-
-        // check if temp3 is still in range of -30 to 30 (or balance point)
-
-        // if (temp3 <= -50)
-        // {
-        //     servo_pos = 135;
-        //     rotate_servo_with_sun();
-        // }
-
-        // if (temp3 > -50 && temp3 <= -20)
-        // {
-        //     myservo.write(115);
-        // }
-
-        // if (temp3 > -10 && temp3 <= 10)
-        // {
-        //     myservo.write(90);
-        // }
-
-        // if (temp3 > 20 && temp3 <= 50)
-        // {
-        //     myservo.write(85);
-        // }
-
-        // if (temp3 >= 50)
-        // {
-        //     myservo.write(45);
-        // }
-
-        if (temp3 < -tolerance)
+        int tempx = temp3;
+        if (tempx < -tolerance)
         {
-            if (servo_pos < 180)
+            if (servo_pos < 155)
+            {
+                myservo.write(servo_pos);
                 servo_pos++;
+            }
         }
-
-        if (temp3 > tolerance)
+        if (tempx > tolerance)
         {
-            if (servo_pos > 0)
+            if (servo_pos > 40)
+            {
                 servo_pos--;
+                myservo.write(servo_pos);
+            }
         }
-
-        myservo.write(servo_pos);
     }
 
     /*END Control Servo*/
 }
 
-void rotate_servo_with_sun()
-{
-    if (temp3 >= -5)
-    {
-        // servo will rotate to the last position that it's in
-        servo_pos = servo_pos - 20;
-        myservo.write(servo_pos);
-    }
-
-    return;
-}
-
 void servo_first_time()
 {
     int temp11 = analogRead(A1);
+    delay(100);
     int temp12 = analogRead(A2);
-    int temp13 = temp12 = temp11;
+    delay(100);
+    int temp13 = temp12 - temp11;
 
-    if (temp13 <= -50)
+    if (temp13 <= -900)
     {
-        myservo.write(135);
+        // myservo.write(140);
+        delay(25);
+        int servo_pos1 = 140;
+        myservo.write(servo_pos1);
     }
 
-    if (temp13 > -50 && temp13 <= -20)
+    if (temp13 > -300 && temp13 <= -200)
     {
-        myservo.write(115);
+        // myservo.write(120);
+        delay(25);
+        int servo_pos1 = 120;
+        myservo.write(servo_pos1);
     }
 
-    if (temp13 > -10 && temp13 <= 10)
+    if (temp13 > -20 && temp13 <= 20)
     {
-        myservo.write(90);
+        // myservo.write(95);
+        delay(25);
+        int servo_pos1 = 95;
+        myservo.write(servo_pos1);
     }
 
-    if (temp13 > 20 && temp13 <= 50)
+    if (temp13 > 250 && temp13 <= 300)
     {
-        myservo.write(85);
+        // myservo.write(70);
+        delay(25);
+        int servo_pos1 = 70;
+        myservo.write(servo_pos1);
     }
 
-    if (temp13 >= 50)
+    if (temp13 >= 900)
     {
-        myservo.write(45);
+        // myservo.write(30);
+        delay(25);
+        int servo_pos1 = 30;
+        myservo.write(servo_pos1);
     }
 }
