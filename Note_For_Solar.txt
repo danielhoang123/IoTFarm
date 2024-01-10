@@ -1,0 +1,28 @@
+2.2.2 Nguyên lý hoạt động của tấm pin mặt trời
+
+- Nghiêm túc ra thì phần này a thấy hơi sơ sài :)) Đợt đó a học môn này kiểu qua loa mà cô của a còn bắt phải giải thích nguyên
+lý hoạt động từ mạch tương đương của solar cell. Nên a nghĩ ít nhất là e cũng cần phải có giải thích nguyên lý hoạt động
+bằng cách đó
+
+- E nên giải thích về sơ đồ mạch điện tương đương (equivalent circuit) của solar cell, một số những tài liệu a có thể để ở đây nha:
+
+	https://sunpowercell.blogspot.com/2010/09/equivalent-circuit-of-solar-cell.html
+	https://www.pveducation.org/pvcdrom/welcome-to-pvcdrom/instructions
+	https://www.youtube.com/watch?v=HnpDaYINCKY
+
+- Tất nhiên là nếu e giải thích được càng nhiều thông số càng tốt, còn nếu không giải thích hết được thì ít nhất cũng phải hiểu solar cell hoạt động như thế nào,
+các thành phần ở trong mạch điện tương đương từ đâu mà ra, như điện trở Rsh và Rs, vì sao lại có diode nối song song với lại solar cell....
+
+- Như a thì a sẽ hỏi đến khi e giải thích được cho a hết cái nguyên lí cái mạch tương đương thì thôi, ý là nó còn thêm cả phần nối các tấm lại với nhau nhưng
+mà chắc thầy của e không ác đến mức đó đâu :)))
+
+2.3 Tổng quan về IOT
+
+- E có thể thêm cho a một số những thông tin sau:
+	+ Một hệ thống IoT bao gồm những cái gì
+	+ Một số hệ thống IoT điển hình mà có thể được đặt ra
+	
+	Tài liệu: https://aws.amazon.com/vi/what-is/iot/#:~:text=The%20term%20IoT%2C%20or%20Internet,as%20between%20the%20devices%20themselves.
+
+- Có tâm huyết hơn nữa thì có thể nhét thêm vài cái hình thực tế những dự án IoT :v Optional.
+

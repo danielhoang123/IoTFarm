@@ -2,6 +2,16 @@
 #include <LoRa.h>
 #include <Servo.h>
 
+#include <Wire.h>
+#include "DFRobot_INA219.h"
+
+DFRobot_INA219_IIC ina219(&Wire, INA219_I2C_ADDRESS4);
+
+// Revise the following two paramters according to actula reading of the INA219 and the multimeter
+// for linearly calibration
+float ina219Reading_mA = 1000;
+float extMeterReading_mA = 1000;
+
 // Sensor pins
 #define sensorMoist A0
 #define sensorRain A3
@@ -56,9 +66,17 @@ void setup()
             ;
     }
     Serial.println("LoRa Sender");
+
     // Variables init
     valMoist = 0;
     valRain = 0;
+
+    while (ina219.begin() != true)
+    {
+        Serial.println("INA219 begin faild");
+        delay(2000);
+    }
+    ina219.linearCalibrate(ina219Reading_mA, extMeterReading_mA);
 
     /*START Servo Setup*/
     delay(250);
@@ -127,7 +145,13 @@ void loop()
         soilSensorMillis = currentMillis;
         valMoist = analogRead(sensorMoist);
         Serial.println(valMoist);
-        map_value = map(valMoist, 0, 505, 0, 100);
+
+        map_value = map(valMoist, 290, 480, 100, 0);
+
+        if (map_value < 0)
+        {
+            map_value = 0;
+        }
         // Serial.print("Moisture: ");
         // Serial.println(valMoist);
     }
@@ -137,6 +161,8 @@ void loop()
     {
         rainSensorMillis = currentMillis;
         valRain = analogRead(sensorRain);
+        Serial.print("BusVoltage:   ");
+        Serial.print(ina219.getBusVoltage_V(), 2);
         // Serial.print("Rain: ");
         // Serial.println(valRain);
     }
@@ -209,6 +235,8 @@ void loop()
         LoRa.print(map_value);
         LoRa.print(",");
         LoRa.print(valRain);
+        LoRa.print(";");
+        LoRa.print(ina219.getBusVoltage_V(), 2);
         LoRa.endPacket();
 
         if (currentMillis - startMillis_clearString >= clearString_interval)

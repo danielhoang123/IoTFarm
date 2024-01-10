@@ -79,8 +79,6 @@ const long modeChange_Interval = 10000;
 
 const long send_Interval = 500;
 
-int node_call = 3;
-
 int test_node_change;
 
 float tempx = 0;
@@ -91,9 +89,8 @@ float pHx = 0;
 
 int valMoist = 0;
 int valRain = 0;
-
-
-//pump controlling variables
+float valSolarVoltage = 0;
+/*pump controlling variables*/
 unsigned long checkMillis = 0;
 const long checkInterval = 100;
 
@@ -104,15 +101,17 @@ bool pump1_state = 0;
 bool pump2_state = 0;
 bool pump3_state = 0;
 
+int V6_toggle = 0, V7_toggle = 0;
+
 void sendNode3()
 {
 
   if (test_node_change == 3)
   {
-    //temp
+    // temp
     Blynk.virtualWrite(V3, humix); // select your virtual pins accordingly
 
-    //humi
+    // humi
     Blynk.virtualWrite(V2, tempx); // select your virtual pins accordingly
   }
 
@@ -131,32 +130,65 @@ void sendNode3()
     Blynk.virtualWrite(V4, valMoist); // select your virtual pins accordingly
 
     // rain
-    if (valRain < 50)
+    if (valRain < 400)
     {
       Blynk.virtualWrite(V5, "Raining"); // select your virtual pins accordingly
     }
-    if(valRain > 800){
+    if (valRain > 800)
+    {
       Blynk.virtualWrite(V5, "Not raining");
     }
+
+    //Solar Voltage
+    Blynk.virtualWrite(V8, valSolarVoltage); // select your virtual pins accordingly
   }
 }
 
-void sendNode2()
-{
-  // light
-  Blynk.virtualWrite(V1, luxx); // select your virtual pins accordingly
+// void sendNode2()
+// {
+//   // light
+//   Blynk.virtualWrite(V1, luxx); // select your virtual pins accordingly
 
-  // pH
-  Blynk.virtualWrite(V0, pHx); // select your virtual pins accordingly
+//   // pH
+//   Blynk.virtualWrite(V0, pHx); // select your virtual pins accordingly
+// }
+
+// void sendNode1()
+// {
+//   // Soil
+//   Blynk.virtualWrite(V4, 1); // select your virtual pins accordingly
+
+//   // rain
+//   Blynk.virtualWrite(V5, 1); // select your virtual pins accordingly
+// }
+
+BLYNK_WRITE(V6)
+{
+  int pinValue6 = param.asInt();
+
+  // process received value
+  if (pinValue6 == 1)
+  {
+    V6_toggle = 1;
+  }
+  if (pinValue6 == 0)
+  {
+    V6_toggle = 0;
+  }
 }
 
-void sendNode1()
+BLYNK_WRITE(V7)
 {
-  // Soil
-  Blynk.virtualWrite(V4, 1); // select your virtual pins accordingly
-
-  // rain
-  Blynk.virtualWrite(V5, 1); // select your virtual pins accordingly
+  int pinValue7 = param.asInt();
+  if (pinValue7 == 1)
+  {
+    V7_toggle = 1;
+  }
+  if (pinValue7 == 0)
+  {
+    V7_toggle = 0;
+  }
+  // process received value
 }
 
 void setup()
@@ -245,46 +277,42 @@ void loop()
         if (test_node_change == 1)
         {
           int commaIndex = LoRaData.indexOf(',');
+          int semicolonIndex = LoRaData.indexOf(';');
+
           String temp1 = LoRaData.substring(0, commaIndex);
           String temp2 = LoRaData.substring(commaIndex + 1);
+          String temp7 = LoRaData.substring(semicolonIndex + 1);
+
           valMoist = temp1.toInt();
           valRain = temp2.toInt();
+          valSolarVoltage = temp7.toFloat();
+
         }
 
         if (test_node_change == 2)
         {
-          int commaIndex = LoRaData.indexOf(',');
-          String temp1 = LoRaData.substring(0, commaIndex);
-          String temp2 = LoRaData.substring(commaIndex + 1);
-          luxx = temp1.toFloat();
-          pHx = temp2.toFloat();
+          int commaIndex1 = LoRaData.indexOf(',');
+
+          String temp3 = LoRaData.substring(0, commaIndex1);
+          String temp4 = LoRaData.substring(commaIndex1 + 1);
+
+          luxx = temp3.toFloat();
+          pHx = temp4.toFloat();
         }
 
         if (test_node_change == 3)
         {
-          int commaIndex = LoRaData.indexOf(',');
-          String temp1 = LoRaData.substring(0, commaIndex);
-          String temp2 = LoRaData.substring(commaIndex + 1);
-          tempx = temp1.toFloat();
-          humix = temp2.toFloat();
+          int commaIndex2 = LoRaData.indexOf(',');
+
+          String temp5 = LoRaData.substring(0, commaIndex2);
+          String temp6 = LoRaData.substring(commaIndex2 + 1);
+
+          tempx = temp5.toFloat();
+          humix = temp6.toFloat();
         }
-        // String temp1 = LoRaData.substring(0, 4);
-        // String humi1 = LoRaData.substring(4);
-        // tempx = temp1.toFloat();
-        // humix = humi1.toFloat();
-
-        // Serial.print(tempx + "\t");
-        // Serial.println(humix);
-
-        // int commaIndex = LoRaData.indexOf(',');
-        // String temp1 = LoRaData.substring(0, commaIndex);
-        // String humi1 = LoRaData.substring(commaIndex + 1);
-        // tempx = temp1.toFloat();
-        // humix = humi1.toFloat();
 
         Serial.println("Lora:" + LoRaData);
-        // Serial.println("Temp:" + temp1);
-        // Serial.println("Humid:" + humi1);
+        // Serial.println(valSolarVoltage);
       }
     }
     break;
@@ -329,33 +357,51 @@ void loop()
   // }
 
   /*START Control pump*/
-  if(currentMillis - checkMillis >= checkInterval){
+  if (currentMillis - checkMillis >= checkInterval)
+  {
     checkMillis = currentMillis;
-    if(pHx < 4){
-      pump2_state = 1;
-    }
-
-    if(pHx >= 6.5 && pHx <= 7.5){
-      pump2_state = 0;
-      pump3_state = 0;
-    }
-
-     if(pHx >= 11.0){
-      pump3_state = 1;
-    }
-
-    if(valMoist > 400 && valRain > 900){
+    if (valMoist > 400 && valRain > 900)
+    {
       pump1_state = 1;
     }
-    else{
+    else
+    {
       pump1_state = 0;
     }
   }
 
-  if(currentMillis - addValueMillis >= addValueInterval){
+  if (currentMillis - addValueMillis >= addValueInterval)
+  {
     addValueMillis = currentMillis;
-    digitalWrite(13, pump3_state);
-    digitalWrite(14, pump2_state);
-    digitalWrite(15, pump1_state);
+
+    if (V6_toggle == 1)
+    {
+      digitalWrite(14, HIGH);
+    }
+
+    if (V6_toggle == 0)
+    {
+      digitalWrite(14, LOW);
+    }
+
+    if (V7_toggle == 1)
+    {
+      digitalWrite(13, HIGH);
+    }
+
+    if (V7_toggle == 0)
+    {
+      digitalWrite(13, LOW);
+    }
+
+    if(valRain > 800 && valMoist < 10){
+      digitalWrite(15, HIGH);
+    }
+    else{
+      digitalWrite(15, LOW);
+    }
+    // digitalWrite(13, pump3_state);
+    // digitalWrite(14, pump2_state);
+    
   }
 }

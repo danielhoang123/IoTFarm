@@ -1,0 +1,5 @@
+- INA219 can't connect directly with the V(+) and V(-) of the solar panel, it has to conenct with some kind of LOAD
+
+- This is for controlling LED over Blynk App
+
+	+ https://docs.blynk.io/en/blynk.apps/widgets-controllers/button 

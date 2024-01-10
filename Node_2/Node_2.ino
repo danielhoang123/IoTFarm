@@ -194,8 +194,8 @@ void loop()
         LoRa.beginPacket();
         LoRa.print(lux, 1);
         LoRa.print(",");
-        // LoRa.print(soil_ph, 1);
-        LoRa.print("7.0");
+        LoRa.print(soil_ph, 1);
+        // LoRa.print("7.0");
         LoRa.endPacket();
 
         if (currentMillis - startMillis_clearString >= clearString_interval)
