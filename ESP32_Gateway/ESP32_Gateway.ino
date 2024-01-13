@@ -89,7 +89,8 @@ float pHx = 0;
 
 int valMoist = 0;
 int valRain = 0;
-float valSolarVoltage = 0;
+float valSolarVoltage = 0.0; 
+float valSolarCurrent = 0.0;
 /*pump controlling variables*/
 unsigned long checkMillis = 0;
 const long checkInterval = 100;
@@ -141,6 +142,9 @@ void sendNode3()
 
     //Solar Voltage
     Blynk.virtualWrite(V8, valSolarVoltage); // select your virtual pins accordingly
+
+    //Solar Current
+    Blynk.virtualWrite(V9, valSolarCurrent); // select your virtual pins accordingly
   }
 }
 
@@ -278,14 +282,17 @@ void loop()
         {
           int commaIndex = LoRaData.indexOf(',');
           int semicolonIndex = LoRaData.indexOf(';');
+          int colonIndex = LoRaData.indexOf(':');
 
           String temp1 = LoRaData.substring(0, commaIndex);
           String temp2 = LoRaData.substring(commaIndex + 1);
           String temp7 = LoRaData.substring(semicolonIndex + 1);
+          String temp8 = LoRaData.substring(colonIndex + 1);
 
           valMoist = temp1.toInt();
           valRain = temp2.toInt();
           valSolarVoltage = temp7.toFloat();
+          valSolarCurrent = temp8.toInt();
 
         }
 

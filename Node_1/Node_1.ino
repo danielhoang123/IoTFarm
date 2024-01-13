@@ -144,7 +144,7 @@ void loop()
     {
         soilSensorMillis = currentMillis;
         valMoist = analogRead(sensorMoist);
-        Serial.println(valMoist);
+        // Serial.println(valMoist);
 
         map_value = map(valMoist, 290, 480, 100, 0);
 
@@ -161,8 +161,20 @@ void loop()
     {
         rainSensorMillis = currentMillis;
         valRain = analogRead(sensorRain);
+
         Serial.print("BusVoltage:   ");
         Serial.print(ina219.getBusVoltage_V(), 2);
+        Serial.println("V");
+        // Serial.print("ShuntVoltage: ");
+        // Serial.print(ina219.getShuntVoltage_mV(), 3);
+        // Serial.println("mV");
+        Serial.print("Current:      ");
+        Serial.print(ina219.getCurrent_mA(), 1);
+        Serial.println("mA");
+        // Serial.print("Power:        ");
+        // Serial.print(ina219.getPower_mW(), 1);
+        // Serial.println("mW");
+        Serial.println("");
         // Serial.print("Rain: ");
         // Serial.println(valRain);
     }
@@ -237,6 +249,8 @@ void loop()
         LoRa.print(valRain);
         LoRa.print(";");
         LoRa.print(ina219.getBusVoltage_V(), 2);
+        LoRa.print(":");
+        LoRa.print(ina219.getCurrent_mA(), 1);
         LoRa.endPacket();
 
         if (currentMillis - startMillis_clearString >= clearString_interval)
